@@ -1,0 +1,48 @@
+version: "1"
+pipelines:
+  # Compile c program and package it as zip
+  c_compile:
+    build:
+      command: ./build.sh
+      container: "build_c_example"
+      workdir: "/build"
+      force_pull: false
+    input:
+      environment:
+        # Provide the name of the person
+        PERSON_NAME:
+          source: field
+          fieldname: person_name
+    output:
+      - patterns:
+          - main
+        packager: zip
+        destination:
+          provider: filesystem
+          options:
+            location: /tmp/buildout
+        notify:
+          destination: cli
+  # Compile C progam and copy the files
+  c_compile_copy:
+    build:
+      command: ./build.sh
+      container: "build_c_example"
+      workdir: "/build"
+      force_pull: false
+    input:
+      environment:
+        # Provide the name of the person
+        PERSON_NAME:
+          source: field
+          fieldname: person_name
+    output:
+      - patterns:
+          - main
+        packager: copy
+        destination:
+          provider: filesystem
+          options:
+            location: /tmp/buildout
+        notify:
+          destination: cli

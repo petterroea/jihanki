@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "jihanki"
+description = "Build system designed for building custom releases of software from a common base"
+readme = "README.md"
+requires-python = ">=3.7"
+
+classifiers = [
+    "Framework :: Sanic",
+    "Programming Language :: Python :: 3",
+]
+dependencies = [
+    "sanic",
+    "rq",
+    "pyyaml",
+    "docker",
+    "pydantic"
+]
+dynamic = ["version"]
+
+[project.optional-dependencies]
+
+dev = [
+    "pytest",
+    "ruff"
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
