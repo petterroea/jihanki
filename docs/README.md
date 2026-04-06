@@ -19,7 +19,7 @@ Jihanki needs dockerd and redis.
  * Command is ran, build happens
    * see [manifest/build.md](manifest.md)
  * Build-end cleanup happens:
-   * A packager is used to package the resulting artefacts
+   * A packager is used to package the resulting artefacts from `/out` in the build container
    * A delivery mechanism is used to ship the packaged artefacts it to its final destination
    * A notification handler optionally notifies of the build being complete
    * see [manifest/output.md](manifest/output.md) for more info

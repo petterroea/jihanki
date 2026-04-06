@@ -1,0 +1,63 @@
+version: "3"
+services:
+  webserver:
+    image: petterroea/jihanki:latest
+    command: ["api"]
+    volumes:
+      - ./src:/srv/jihanki/src
+      - ./test-pipelines:/srv/jihanki/test-pipelines
+    ports:
+      - 8000:8000
+    environment:
+      JIHANKI_TOKEN: Iov4rx01u2utaQV6duswrulmekZyV4K5eR6oyF6n19M
+      PIPELINES_LOCATION: /srv/jihanki/test-pipelines/c_compile_sourcedir/pipelines.yml
+    depends_on:
+      redis:
+        condition: service_healthy
+    logging:
+      options:
+        max-size: "512m"
+  worker:
+    image: petterroea/jihanki:latest
+    command: ["worker"]
+    environment:
+      JIHANKI_TOKEN: Iov4rx01u2utaQV6duswrulmekZyV4K5eR6oyF6n19M
+      DOCKER_HOST: "tcp://dind:2375"
+      SCRATCH_DIR: "/docker-scratch"
+    volumes:
+      - ./src:/srv/jihanki/src
+      - ./out:/out
+      - ./test-pipelines:/srv/jihanki/test-pipelines
+      - /tmp/docker/:/regcred
+      - dind-sock:/tmp/socket/:rw
+      - dind-certs:/certs
+      - docker-scratch:/docker-scratch:rw
+    depends_on:
+      redis:
+        condition: service_healthy
+    logging:
+      options:
+        max-size: "512m"
+  redis:
+    image: redis:alpine
+    healthcheck:
+      test: ["CMD", "redis-cli","ping"]
+      interval: 5s
+    ports:
+    - "6379:6379"
+    logging:
+      options:
+        max-size: "512m"
+  dind:
+    image: docker:dind
+    privileged: true
+    environment:
+      DOCKER_TLS_CERTDIR: ""
+    volumes:
+      - dind-sock:/tmp/socket/
+      - dind-certs:/certs
+      - docker-scratch:/docker-scratch
+volumes:
+  dind-sock:
+  dind-certs:
+  docker-scratch:

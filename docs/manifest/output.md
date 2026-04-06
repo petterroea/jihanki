@@ -24,6 +24,8 @@ output:
 
 ### Fields
 
+Output files in jihanki **MUST** be placed in `/out`.
+
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
 | `patterns` | list of strings | Yes | | Glob patterns matched against the workdir to select artifacts |
@@ -32,6 +34,8 @@ output:
 | `notify` | map | Yes | | How to notify on completion |
 
 ## packager
+
+The packager is what collects the files found earlier using patterns from the container and prepares them for delivery. 
 
 | Value | Description |
 |-------|-------------|

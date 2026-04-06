@@ -25,6 +25,7 @@ output:
 |-------|------|----------|---------|-------------|
 | `command` | string | Yes | | Command to run inside the container as the unprivileged user |
 | `container` | string | Yes | | Docker image to pull and run |
+| `force_pull` | boolean | No | | If the docker image should be force pulled, even if it exists locally |
 | `privileged_command` | string | No | `""` | Command to run as root before the main command |
 | `workdir` | string | No | `/var/runner` | Working directory inside the container where build material is mounted |
 | `regcred_directory` | string | No | `""` | Path to Docker registry credentials file. If set, Bob logs in before pulling the image |
