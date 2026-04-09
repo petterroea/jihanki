@@ -6,7 +6,6 @@ import logging
 log = logging.getLogger(__name__)
 
 
-
 class DestinationHandler:
     """Base class for delivering packaged build artifacts to their final destination."""
 

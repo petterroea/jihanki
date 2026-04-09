@@ -153,7 +153,9 @@ def test_webhook_notification_serializes_paths(monkeypatch):
             queued["payload"] = payload
 
     monkeypatch.setattr("jihanki.pipeline.output.notification.Queue", DummyQueue)
-    monkeypatch.setattr("jihanki.pipeline.output.notification.redis_connection", object(), raising=False)
+    monkeypatch.setattr(
+        "jihanki.pipeline.output.notification.redis_connection", object(), raising=False
+    )
 
     handler = WebhookNotificationHandler({"url": "https://example.com/hook"})
     handler.notify("job-123", [Path("job-123/out.bin")], {})
