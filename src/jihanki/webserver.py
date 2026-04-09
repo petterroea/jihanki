@@ -15,10 +15,10 @@ import logging
 
 log = logging.getLogger(__name__)
 
+
+# Set up pipeline
 pipeline_location = os.environ.get("PIPELINES_LOCATION", "pipelines.yaml")
-
 log.info(f"Starting Jihanki with pipeline location {pipeline_location}")
-
 pipelines = get_pipelines(Path(pipeline_location))
 
 for name, pipeline in pipelines.items():
