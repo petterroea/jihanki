@@ -12,6 +12,7 @@ from jihanki.pipeline import Pipeline
 
 import logging
 
+logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
 
 RUN_UID = os.getuid()
@@ -79,15 +80,15 @@ def init_volumes(job_id: str, variables, pipeline: Pipeline):
 
 def docker_exec_run(container, pwd: str, command: str, user: str, environment=None):
     log.debug(f"Docker exec run: user={user} command={command}")
-    result, data = container.exec_run(
-        command, workdir=pwd, user=user, stream=True, environment=environment, tty=True
+    api = container.client.api
+    exec_id = api.exec_create(
+        container.id, command, workdir=pwd, user=user, environment=environment, tty=True
     )
-    if result is not None:
-        raise RuntimeError(f"Invalid result: {result}")
+    stream = api.exec_start(exec_id, stream=True)
 
     collected_lines = []
     line_builder = ""
-    for line in data:
+    for line in stream:
         line_builder += line.decode()
         if "\n" in line_builder:
             contents = line_builder.split("\n")
@@ -97,7 +98,9 @@ def docker_exec_run(container, pwd: str, command: str, user: str, environment=No
             line_builder = contents[-1]
     if line_builder:
         collected_lines.append(line_builder)
-    return "\n".join(collected_lines)
+
+    exit_code = api.exec_inspect(exec_id)["ExitCode"]
+    return "\n".join(collected_lines), exit_code
 
 
 def run_job(variables, pipeline):
@@ -159,28 +162,39 @@ def run_job(variables, pipeline):
 
         if pipeline.build.privileged_command != "":
             log.info("Starting privileged container")
-            build_logs += docker_exec_run(
+            output, exit_code = docker_exec_run(
                 container,
                 workdir,
                 pipeline.build.privileged_command,
                 "root",
                 environment,
             )
+            build_logs += output
+            if exit_code != 0:
+                log.error(f"Privileged command failed with exit code {exit_code}")
+                container.stop()
+                container.remove()
+                pipeline.build.persist_build_logs(job.id, build_logs)
+                return
             log.info("Done running privileged container")
 
         log.info(
             f"Starting normal container, running as {container_user}, running {pipeline.build.command} from {workdir}"
         )
-        # Run unprivileged
-        docker_exec_run(
+        output, exit_code = docker_exec_run(
             container, workdir, pipeline.build.command, container_user, environment
         )
-        log.info("Done running normal container")
+        build_logs += output
 
         container.stop()
         container.remove()
 
-        log.info("Done running container")
+        if exit_code != 0:
+            log.error(f"Build command failed with exit code {exit_code}")
+            pipeline.build.persist_build_logs(job.id, build_logs)
+            return
+
+        log.info("Done running build")
 
         # Persist build logs
         pipeline.build.persist_build_logs(job.id, build_logs)

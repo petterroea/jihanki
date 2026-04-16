@@ -17,7 +17,7 @@ class NotificationHandler:
 def send_webhook_async(url, payload, headers=None):
     response = requests.post(url, json=payload, headers=headers)
     if not response.ok:
-        log.warning(
+        log.error(
             "Webhook to %s returned %s: %s", url, response.status_code, response.text
         )
 
@@ -61,7 +61,7 @@ class WebhookNotificationHandler(NotificationHandler):
         q.enqueue(
             send_webhook_async,
             self.url,
-            {"job_id": job_id, "files": [str(path) for path in files]},
+            {"job_id": job_id, "files": files},
             self.headers or None,
         )
 

@@ -9,6 +9,7 @@ from .packager import ZipPackager, CopyPackager
 from pathlib import Path
 
 import glob
+import hashlib
 import tempfile
 import os
 
@@ -106,7 +107,11 @@ class Output:
             metadata = self.destination_handler.deliver(tmpdir_p)
             log.info("Successfully delivered file")
             if self.notification_handler:
+                file_checksums = {}
+                for p in result_files:
+                    sha256 = hashlib.sha256(p.read_bytes()).hexdigest()
+                    file_checksums[str(p.relative_to(tmpdir))] = sha256
                 self.notification_handler.notify(
-                    job_id, [p.relative_to(tmpdir) for p in result_files], metadata
+                    job_id, file_checksums, metadata
                 )
                 log.info("Successfully notified of completion")

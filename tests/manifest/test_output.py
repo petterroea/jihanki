@@ -159,10 +159,10 @@ def test_webhook_notification_serializes_paths(monkeypatch):
     )
 
     handler = WebhookNotificationHandler({"url": "https://example.com/hook"})
-    handler.notify("job-123", [Path("job-123/out.bin")], {})
+    handler.notify("job-123", {"job-123/out.bin": "abc123"}, {})
 
     assert queued["url"] == "https://example.com/hook"
-    assert queued["payload"] == {"job_id": "job-123", "files": ["job-123/out.bin"]}
+    assert queued["payload"] == {"job_id": "job-123", "files": {"job-123/out.bin": "abc123"}}
     assert queued["headers"] is None
 
 
@@ -192,10 +192,10 @@ def test_webhook_notification_supports_headers(monkeypatch):
             "headers_from_env": {"X-Webhook-Token": "TEST_WEBHOOK_TOKEN"},
         }
     )
-    handler.notify("job-123", [Path("job-123/out.bin")], {})
+    handler.notify("job-123", {"job-123/out.bin": "abc123"}, {})
 
     assert queued["url"] == "https://example.com/hook"
-    assert queued["payload"] == {"job_id": "job-123", "files": ["job-123/out.bin"]}
+    assert queued["payload"] == {"job_id": "job-123", "files": {"job-123/out.bin": "abc123"}}
     assert queued["headers"] == {
         "Content-Type": "application/json",
         "X-Webhook-Token": "secret-token",
