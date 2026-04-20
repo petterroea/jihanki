@@ -1,6 +1,7 @@
 from typing import Optional
 import docker
 
+from datetime import datetime, timezone
 from rq import get_current_job
 
 import os
@@ -105,6 +106,7 @@ def docker_exec_run(container, pwd: str, command: str, user: str, environment=No
 
 def run_job(variables, pipeline):
     job = get_current_job()
+    started_at = datetime.now(timezone.utc)
     log.info(f"Job is running, job id {job.id}")
 
     with init_volumes(job.id, variables, pipeline) as (volumes, output_dir):
@@ -172,7 +174,7 @@ def run_job(variables, pipeline):
             build_logs += output
             if exit_code != 0:
                 log.error(f"Privileged command failed with exit code {exit_code}")
-                container.stop()
+                container.stop(timeout=0)
                 container.remove()
                 pipeline.build.persist_build_logs(job.id, build_logs)
                 return
@@ -186,7 +188,7 @@ def run_job(variables, pipeline):
         )
         build_logs += output
 
-        container.stop()
+        container.stop(timeout=0)
         container.remove()
 
         if exit_code != 0:
@@ -200,5 +202,5 @@ def run_job(variables, pipeline):
         pipeline.build.persist_build_logs(job.id, build_logs)
 
         # Deliver the results
-        pipeline.deliver(job.id, output_dir)
+        pipeline.deliver(job.id, output_dir, started_at)
     log.info("Done")
