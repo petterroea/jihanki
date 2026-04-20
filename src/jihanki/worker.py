@@ -174,7 +174,7 @@ def run_job(variables, pipeline):
             build_logs += output
             if exit_code != 0:
                 log.error(f"Privileged command failed with exit code {exit_code}")
-                container.stop()
+                container.stop(timeout=0)
                 container.remove()
                 pipeline.build.persist_build_logs(job.id, build_logs)
                 return
@@ -188,7 +188,7 @@ def run_job(variables, pipeline):
         )
         build_logs += output
 
-        container.stop()
+        container.stop(timeout=0)
         container.remove()
 
         if exit_code != 0:
