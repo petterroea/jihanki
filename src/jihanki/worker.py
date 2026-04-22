@@ -104,6 +104,13 @@ def docker_exec_run(container, pwd: str, command: str, user: str, environment=No
     return "\n".join(collected_lines), exit_code
 
 
+def get_job_environment(pipeline: Pipeline, variables, job_id: str):
+    environment = pipeline.get_env_variables(variables)
+    environment["JIHANKI_JOB_ID"] = job_id
+    environment["JIHANKI_JOB_ID_SHORT"] = job_id[:8]
+    return environment
+
+
 def run_job(variables, pipeline):
     job = get_current_job()
     started_at = datetime.now(timezone.utc)
@@ -144,7 +151,7 @@ def run_job(variables, pipeline):
         container_user = pipeline.build.user or str(RUN_UID)
 
         log.debug("Creating supporting container")
-        environment = pipeline.get_env_variables(variables)
+        environment = get_job_environment(pipeline, variables, job.id)
 
         log.debug(
             f"Creating container with volumes {volumes}, environment {environment}, user {container_user}"
