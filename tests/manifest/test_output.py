@@ -125,7 +125,9 @@ def test_filesystem_destination_sets_web_readable_modes(tmp_path):
     handler.deliver(foundfiles_dir)
 
     assert stat.S_IMODE((destination / "job-123").stat().st_mode) == 0o755
-    assert stat.S_IMODE((destination / "job-123" / "artifact.txt").stat().st_mode) == 0o644
+    assert (
+        stat.S_IMODE((destination / "job-123" / "artifact.txt").stat().st_mode) == 0o644
+    )
 
 
 def test_redis_destination():
