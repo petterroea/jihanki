@@ -46,7 +46,7 @@ class FilesystemDestinationHandler(DestinationHandler):
     """Delivers packaged build artifacts to a filesystem location.
 
     Copies all files from the source directory to the configured destination path,
-    setting appropriate file permissions (0o664) on all delivered files and directories.
+    setting web-readable permissions on all delivered files and directories.
     """
 
     def __init__(self, options):
@@ -54,13 +54,26 @@ class FilesystemDestinationHandler(DestinationHandler):
 
     def deliver(self, foundfiles_dir: Path):
         log.info(f"Delivering output to {self.location}")
-        shutil.copytree(foundfiles_dir, self.location, dirs_exist_ok=True)
-        # Walk foundfiles_dir and chmod it in dst dir
-        for root, dirs, files in os.walk(foundfiles_dir, topdown=False):
-            rel_root = Path(root).relative_to(foundfiles_dir)
+        destination_existed = self.location.exists()
+        self.location.mkdir(parents=True, exist_ok=True)
+        if not destination_existed:
+            os.chmod(self.location, 0o755)
 
-            for d in dirs:
-                os.chmod(self.location / rel_root / d, 0o775)
+        for entry in foundfiles_dir.iterdir():
+            destination = self.location / entry.name
 
-            for f in files:
-                os.chmod(self.location / rel_root / f, 0o664)
+            if entry.is_dir():
+                shutil.copytree(entry, destination, dirs_exist_ok=True)
+                os.chmod(destination, 0o755)
+
+                for root, dirs, files in os.walk(entry):
+                    rel_root = Path(root).relative_to(entry)
+
+                    for d in dirs:
+                        os.chmod(destination / rel_root / d, 0o755)
+
+                    for f in files:
+                        os.chmod(destination / rel_root / f, 0o644)
+            elif entry.is_file():
+                shutil.copy2(entry, destination)
+                os.chmod(destination, 0o644)

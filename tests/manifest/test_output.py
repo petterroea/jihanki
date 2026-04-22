@@ -1,4 +1,5 @@
 import pytest
+import stat
 from datetime import datetime, timezone
 from pydantic import ValidationError
 from jihanki.pipeline.output import NoArtifactsError, Output
@@ -81,6 +82,50 @@ def test_unknown_packager():
 def test_filesystem_destination():
     o = _make_output()
     assert isinstance(o.destination_handler, FilesystemDestinationHandler)
+
+
+def test_filesystem_destination_sets_created_root_directory_mode(tmp_path):
+    foundfiles_dir = tmp_path / "found"
+    foundfiles_dir.mkdir(mode=0o700)
+    (foundfiles_dir / "artifact.txt").write_text("artifact")
+
+    destination = tmp_path / "delivered"
+    handler = FilesystemDestinationHandler({"location": str(destination)})
+    handler.deliver(foundfiles_dir)
+
+    assert stat.S_IMODE(destination.stat().st_mode) == 0o755
+
+
+def test_filesystem_destination_preserves_existing_root_directory_mode(tmp_path):
+    foundfiles_dir = tmp_path / "found"
+    foundfiles_dir.mkdir()
+    (foundfiles_dir / "artifact.txt").write_text("artifact")
+
+    destination = tmp_path / "delivered"
+    destination.mkdir(mode=0o711)
+
+    handler = FilesystemDestinationHandler({"location": str(destination)})
+    handler.deliver(foundfiles_dir)
+
+    assert stat.S_IMODE(destination.stat().st_mode) == 0o711
+    assert stat.S_IMODE((destination / "artifact.txt").stat().st_mode) == 0o644
+
+
+def test_filesystem_destination_sets_web_readable_modes(tmp_path):
+    foundfiles_dir = tmp_path / "found"
+    foundfiles_dir.mkdir()
+    nested_dir = foundfiles_dir / "job-123"
+    nested_dir.mkdir(mode=0o700)
+    artifact = nested_dir / "artifact.txt"
+    artifact.write_text("artifact")
+    artifact.chmod(0o600)
+
+    destination = tmp_path / "delivered"
+    handler = FilesystemDestinationHandler({"location": str(destination)})
+    handler.deliver(foundfiles_dir)
+
+    assert stat.S_IMODE((destination / "job-123").stat().st_mode) == 0o755
+    assert stat.S_IMODE((destination / "job-123" / "artifact.txt").stat().st_mode) == 0o644
 
 
 def test_redis_destination():
